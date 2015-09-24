@@ -1,6 +1,7 @@
 package com.jordan.sdawalib.kdaproject;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
@@ -13,11 +14,13 @@ import android.widget.Toast;
 
 import com.andreabaccega.widget.FormEditText;
 import com.jordan.sdawalib.kdaproject.Utills.EightCharValidator;
+import com.jordan.sdawalib.kdaproject.Utills.Utills;
 
 import java.util.Calendar;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
+import de.greenrobot.event.EventBus;
 
 public class LoginActivity extends Activity {
 
@@ -38,13 +41,20 @@ public class LoginActivity extends Activity {
     long startClickTime = 0;
     @Bind(R.id.fingerLocation)
     TextView fingerLocation;
-
+    @Bind(R.id.letterPressed)
+    TextView letterPressed;
+    @Bind(R.id.btnCreateExcelFile)
+    Button btnCreateExcelFile;
+    private EventBus bus = EventBus.getDefault();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
         ButterKnife.bind(this);
+
+        bus.register(this);
+
         userName.addValidator(new EightCharValidator());
         password.addValidator(new EightCharValidator());
         btnCollect.setOnTouchListener(new View.OnTouchListener() {
@@ -66,7 +76,7 @@ public class LoginActivity extends Activity {
                     }
                 }
                 pressureTime.setText("pressure:" + event.getPressure() + "\nsize: " + event.getSize());
-                fingerLocation.setText("Finger Location: X="+event.getX()+" Y="+event.getY());
+                fingerLocation.setText("Finger Location: X=" + event.getX() + " Y=" + event.getY());
                 return false;
             }
 
@@ -77,7 +87,10 @@ public class LoginActivity extends Activity {
 
                 boolean isUserNamePassed = userName.testValidity();
                 boolean isPasswordPassed = password.testValidity();
-                boolean isPassed = isUserNamePassed && isPasswordPassed;
+                boolean isPasswordCorrect = password.getText().toString().equals(Utills.getPreferences(LoginActivity.this, Utills.passwordKey));
+                boolean isUserNameCorrect = userName.getText().toString().equals(Utills.getPreferences(LoginActivity.this, Utills.userNameKey));
+
+                boolean isPassed = isUserNamePassed && isPasswordPassed && isPasswordCorrect && isUserNameCorrect;
                 if (isPassed) {
                     Toast.makeText(LoginActivity.this, "Passed", Toast.LENGTH_SHORT).show();
                 } else {
@@ -85,6 +98,7 @@ public class LoginActivity extends Activity {
                 }
             }
         });
+
     }
 
     @Override
@@ -103,6 +117,8 @@ public class LoginActivity extends Activity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            Intent o = new Intent(this, InfoSettings.class);
+            startActivity(o);
             return true;
         }
 
@@ -116,7 +132,7 @@ public class LoginActivity extends Activity {
         outState.putString("downTime", downTime.getText().toString());
         outState.putString("uptime", upTime.getText().toString());
         outState.putString("pressure", pressureTime.getText().toString());
-        outState.putString("fingerLocation",fingerLocation.getText().toString());
+        outState.putString("fingerLocation", fingerLocation.getText().toString());
         super.onSaveInstanceState(outState);
     }
 
@@ -129,5 +145,29 @@ public class LoginActivity extends Activity {
         upTime.setText(savedInstanceState.getString("uptime"));
         pressureTime.setText(savedInstanceState.getString("pressure"));
         fingerLocation.setText(savedInstanceState.getString("fingerLocation"));
+    }
+
+    protected void onDestroy() {
+        // Unregister
+        bus.unregister(this);
+        super.onDestroy();
+    }
+
+    public void onEvent(KeyboardTouchEvent event) {
+        switch (event.getMotionEvent().getAction()) {
+            case MotionEvent.ACTION_DOWN: {
+                startClickTime = Calendar.getInstance().getTimeInMillis();
+                downTime.setText("Down Time:" + startClickTime);
+                break;
+            }
+            case MotionEvent.ACTION_UP: {
+                long clickTime = Calendar.getInstance().getTimeInMillis();
+                long clickDuration = clickTime - startClickTime;
+                upTime.setText("UpTime:" + clickTime + "\n Down Up Time:" + clickDuration);
+            }
+        }
+        pressureTime.setText("pressure:" + event.getMotionEvent().getPressure() + "\nsize: " + event.getMotionEvent().getSize());
+        letterPressed.setText("letter pressed : " + event.charPressed != null ? event.charPressed + "" : "not considered yet");
+        fingerLocation.setText("Finger Location: X=" + event.getMotionEvent().getX() + " Y=" + event.getMotionEvent().getY());
     }
 }
