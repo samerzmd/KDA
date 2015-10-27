@@ -1,9 +1,10 @@
 package com.jordan.sdawalib.kdaproject;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
-import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -14,8 +15,10 @@ import android.widget.Toast;
 
 import com.andreabaccega.widget.FormEditText;
 import com.jordan.sdawalib.kdaproject.Utills.EightCharValidator;
+import com.jordan.sdawalib.kdaproject.Utills.SharedPreferencesManager;
 import com.jordan.sdawalib.kdaproject.Utills.Utills;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 
 import butterknife.Bind;
@@ -25,7 +28,7 @@ import de.greenrobot.event.EventBus;
 public class LoginActivity extends Activity {
 
     @Bind(R.id.toolbar)
-    Toolbar toolbar;
+    android.widget.Toolbar toolbar;
     @Bind(R.id.userName)
     FormEditText userName;
     @Bind(R.id.btnCollect)
@@ -46,16 +49,18 @@ public class LoginActivity extends Activity {
     @Bind(R.id.btnCreateExcelFile)
     Button btnCreateExcelFile;
     private EventBus bus = EventBus.getDefault();
+    private UserModel userModel;
 
+    ArrayList<String>events=new ArrayList<String>();
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
         ButterKnife.bind(this);
-
+        setActionBar(toolbar);
         bus.register(this);
 
-        userName.addValidator(new EightCharValidator());
         password.addValidator(new EightCharValidator());
         btnCollect.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -81,18 +86,27 @@ public class LoginActivity extends Activity {
             }
 
         });
-        btnCollect.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+                btnCollect.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
 
                 boolean isUserNamePassed = userName.testValidity();
                 boolean isPasswordPassed = password.testValidity();
-                boolean isPasswordCorrect = password.getText().toString().equals(Utills.getPreferences(LoginActivity.this, Utills.passwordKey));
-                boolean isUserNameCorrect = userName.getText().toString().equals(Utills.getPreferences(LoginActivity.this, Utills.userNameKey));
+                boolean isPasswordCorrect =true;
+                boolean isUserNameCorrect = true;
 
                 boolean isPassed = isUserNamePassed && isPasswordPassed && isPasswordCorrect && isUserNameCorrect;
                 if (isPassed) {
                     Toast.makeText(LoginActivity.this, "Passed", Toast.LENGTH_SHORT).show();
+                    String k="Action : collect"+ " username "+userName.getText().toString()+" password "+password.getText().toString()+" "+pressureTime.getText().toString()+" "+fingerLocation.getText().toString();
+                    events.add(k);
+                    k="";
+                    for (String s:events){
+                        k+=s;
+                    }
+                    Utills.writeToFile(LoginActivity.this,k);
+                    k="";
+                    events=new ArrayList<String>();
                 } else {
                     Toast.makeText(LoginActivity.this, "Fail", Toast.LENGTH_SHORT).show();
                 }
@@ -117,7 +131,7 @@ public class LoginActivity extends Activity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
-            Intent o = new Intent(this, InfoSettings.class);
+            Intent o = new Intent(this, InfoSettingsActivity.class);
             startActivity(o);
             return true;
         }
@@ -148,19 +162,43 @@ public class LoginActivity extends Activity {
     }
 
     protected void onDestroy() {
-        // Unregister
+        if(bus.isRegistered(this))
         bus.unregister(this);
         super.onDestroy();
     }
 
+    @Override
+    protected void onPause() {
+        if(bus.isRegistered(this))
+        bus.unregister(this);
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        userModel= SharedPreferencesManager.getObject(LoginActivity.this,"usermodel",UserModel.class);
+        if(!bus.isRegistered(this))
+        bus.register(this);
+        super.onResume();
+    }
+
     public void onEvent(KeyboardTouchEvent event) {
+        String action="";
         switch (event.getMotionEvent().getAction()) {
             case MotionEvent.ACTION_DOWN: {
+                action="Keyboard Button Down";
                 startClickTime = Calendar.getInstance().getTimeInMillis();
                 downTime.setText("Down Time:" + startClickTime);
                 break;
             }
             case MotionEvent.ACTION_UP: {
+                action="Keyboard Button Up";
+                long clickTime = Calendar.getInstance().getTimeInMillis();
+                long clickDuration = clickTime - startClickTime;
+                upTime.setText("UpTime:" + clickTime + "\n Down Up Time:" + clickDuration);
+            }
+            default:{
+                action="Keyboard non specific action";
                 long clickTime = Calendar.getInstance().getTimeInMillis();
                 long clickDuration = clickTime - startClickTime;
                 upTime.setText("UpTime:" + clickTime + "\n Down Up Time:" + clickDuration);
@@ -169,5 +207,7 @@ public class LoginActivity extends Activity {
         pressureTime.setText("pressure:" + event.getMotionEvent().getPressure() + "\nsize: " + event.getMotionEvent().getSize());
         letterPressed.setText("letter pressed : " + event.charPressed != null ? event.charPressed + "" : "not considered yet");
         fingerLocation.setText("Finger Location: X=" + event.getMotionEvent().getX() + " Y=" + event.getMotionEvent().getY());
+        events.add("Action : "+action+ " username "+userName.getText().toString()+" password "+password.getText().toString()+" "+pressureTime.getText().toString()+" "+fingerLocation.getText().toString());
+
     }
 }

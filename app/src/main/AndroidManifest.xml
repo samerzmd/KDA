@@ -9,7 +9,8 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/AppTheme"
-        tools:replace="android:icon">
+        tools:replace="android:icon"
+        android:name=".MyApplication">
         <activity
             android:name=".LoginActivity"
             android:label="@string/app_name" >
@@ -34,7 +35,7 @@
         </service>
 
         <activity
-            android:name=".InfoSettings"
+            android:name=".InfoSettingsActivity"
             android:label="@string/title_activity_info_settings" >
         </activity>
     </application>
