@@ -27,6 +27,7 @@
         android:id="@+id/userName"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+
         />
     <com.andreabaccega.widget.FormEditText
         whatever:testType="nocheck"
@@ -40,24 +41,29 @@
         android:id="@+id/btnCollect"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="collect"/>
+        android:text="Login"/>
     <TextView
+        android:visibility="gone"
         android:id="@+id/downTime"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
     <TextView
+        android:visibility="gone"
         android:id="@+id/upTime"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
     <TextView
+        android:visibility="gone"
         android:id="@+id/pressureTime"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
     <TextView
+        android:visibility="gone"
         android:id="@+id/fingerLocation"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
     <TextView
+        android:visibility="gone"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/letterPressed"/>
