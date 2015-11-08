@@ -23,6 +23,7 @@ import java.util.Calendar;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
+import cn.pedant.SweetAlert.SweetAlertDialog;
 import de.greenrobot.event.EventBus;
 
 public class LoginActivity extends Activity {
@@ -50,7 +51,7 @@ public class LoginActivity extends Activity {
     Button btnCreateExcelFile;
     private EventBus bus = EventBus.getDefault();
     private UserModel userModel;
-
+    int numOfExp=0;
     ArrayList<String>events=new ArrayList<String>();
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     @Override
@@ -98,18 +99,39 @@ public class LoginActivity extends Activity {
                 boolean isPassed = isUserNamePassed && isPasswordPassed && isPasswordCorrect && isUserNameCorrect;
                 if (isPassed) {
                     Toast.makeText(LoginActivity.this, "Passed", Toast.LENGTH_SHORT).show();
-                    String k="Action : collect"+ " username "+userName.getText().toString()+" password "+password.getText().toString()+" "+pressureTime.getText().toString()+" "+fingerLocation.getText().toString();
+                    String k="Action : collect"+ " username "+userName.getText().toString()+" password "+password.getText().toString()+" "+pressureTime.getText().toString()+" "+fingerLocation.getText().toString()+" "+downTime.getText().toString()+" "+upTime.getText().toString();
                     events.add(k);
                     k="";
+                    int counter=1;
                     for (String s:events){
+                        s="_____________\n"+counter+") "+s+"\n_____________\n";
                         k+=s;
+                        counter++;
                     }
                     Utills.writeToFile(LoginActivity.this,k);
                     k="";
                     events=new ArrayList<String>();
+                    new SweetAlertDialog(LoginActivity.this, SweetAlertDialog.SUCCESS_TYPE)
+                            .setTitleText("Good Job!")
+                            .setContentText("Your Info has been Saved Successfully! "+ ++numOfExp +" out of 10").setConfirmClickListener(new SweetAlertDialog.OnSweetClickListener() {
+                        @Override
+                        public void onClick(SweetAlertDialog sweetAlertDialog) {
+                            userName.setText("");
+                            password.setText("");
+                            if (numOfExp>=10){
+                                numOfExp=0;
+                                sweetAlertDialog.dismiss();
+                            }
+                            else {
+                                sweetAlertDialog.dismiss();
+                            }
+                        }
+                    })
+                            .show();
                 } else {
                     Toast.makeText(LoginActivity.this, "Fail", Toast.LENGTH_SHORT).show();
                 }
+
             }
         });
 
@@ -197,17 +219,13 @@ public class LoginActivity extends Activity {
                 long clickDuration = clickTime - startClickTime;
                 upTime.setText("UpTime:" + clickTime + "\n Down Up Time:" + clickDuration);
             }
-            default:{
-                action="Keyboard non specific action";
-                long clickTime = Calendar.getInstance().getTimeInMillis();
-                long clickDuration = clickTime - startClickTime;
-                upTime.setText("UpTime:" + clickTime + "\n Down Up Time:" + clickDuration);
-            }
+            break;
         }
         pressureTime.setText("pressure:" + event.getMotionEvent().getPressure() + "\nsize: " + event.getMotionEvent().getSize());
         letterPressed.setText("letter pressed : " + event.charPressed != null ? event.charPressed + "" : "not considered yet");
         fingerLocation.setText("Finger Location: X=" + event.getMotionEvent().getX() + " Y=" + event.getMotionEvent().getY());
-        events.add("Action : "+action+ " username "+userName.getText().toString()+" password "+password.getText().toString()+" "+pressureTime.getText().toString()+" "+fingerLocation.getText().toString());
+        if (event.getMotionEvent().getAction()== MotionEvent.ACTION_DOWN||event.getMotionEvent().getAction()== MotionEvent.ACTION_UP)
+        events.add("Action : "+action+ " username "+userName.getText().toString()+" password "+password.getText().toString()+" "+pressureTime.getText().toString()+" "+fingerLocation.getText().toString()+" "+downTime.getText().toString()+" "+upTime.getText().toString());
 
     }
 }
