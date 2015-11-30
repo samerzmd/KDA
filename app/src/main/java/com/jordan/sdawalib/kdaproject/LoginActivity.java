@@ -14,6 +14,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.andreabaccega.widget.FormEditText;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.jordan.sdawalib.kdaproject.Utills.EightCharValidator;
 import com.jordan.sdawalib.kdaproject.Utills.SharedPreferencesManager;
 import com.jordan.sdawalib.kdaproject.Utills.Utills;
@@ -53,6 +56,7 @@ public class LoginActivity extends Activity {
     private UserModel userModel;
     int numOfExp=0;
     ArrayList<String>events=new ArrayList<String>();
+    ArrayList<KDAMotionEvent>kdaMotionEvents=new ArrayList<KDAMotionEvent>();
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,26 +70,39 @@ public class LoginActivity extends Activity {
         btnCollect.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, final MotionEvent event) {
-                Calendar c = Calendar.getInstance();
-                int date = c.get(Calendar.DATE);
+                if (event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_UP) {
+                    KDAMotionEvent kdaMotionEvent = new KDAMotionEvent();
+                    switch (event.getAction()) {
+                        case MotionEvent.ACTION_DOWN: {
+                            kdaMotionEvent.action = "collect-Action Down";
+                            kdaMotionEvent.actionTime = startClickTime = Calendar.getInstance().getTimeInMillis();
+                            downTime.setText("Down Time:" + startClickTime);
+                            break;
+                        }
+                        case MotionEvent.ACTION_UP: {
+                            kdaMotionEvent.action = "collect-Action Up";
+                            long clickTime = Calendar.getInstance().getTimeInMillis();
+                            kdaMotionEvent.actionTime = clickTime;
+                            long clickDuration = clickTime - startClickTime;
+                            upTime.setText("UpTime:" + clickTime + " Down Up Time:" + clickDuration);
+                        }
+                    }
 
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_DOWN: {
-                        startClickTime = Calendar.getInstance().getTimeInMillis();
-                        downTime.setText("Down Time:" + startClickTime);
-                        break;
-                    }
-                    case MotionEvent.ACTION_UP: {
-                        long clickTime = Calendar.getInstance().getTimeInMillis();
-                        long clickDuration = clickTime - startClickTime;
-                        upTime.setText("UpTime:" + clickTime + " Down Up Time:" + clickDuration);
-                    }
+                    kdaMotionEvent.actionId = event.getAction();
+
+                    kdaMotionEvent.username = userName.getText().toString();
+                    kdaMotionEvent.password = password.getText().toString();
+                    kdaMotionEvent.pressure = event.getPressure();
+                    kdaMotionEvent.size = event.getSize();
+                    kdaMotionEvent.fingerYpostion = event.getY();
+                    kdaMotionEvent.fingerXpostion = event.getX();
+                    kdaMotionEvents.add(kdaMotionEvent);
+                    pressureTime.setText("pressure:" + event.getPressure() + "\nsize: " + event.getSize());
+                    fingerLocation.setText("Finger Location: X=" + event.getX() + " Y=" + event.getY());
+                    return false;
                 }
-                pressureTime.setText("pressure:" + event.getPressure() + "\nsize: " + event.getSize());
-                fingerLocation.setText("Finger Location: X=" + event.getX() + " Y=" + event.getY());
                 return false;
             }
-
         });
                 btnCollect.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -100,6 +117,7 @@ public class LoginActivity extends Activity {
                 if (isPassed) {
                     Toast.makeText(LoginActivity.this, "Passed", Toast.LENGTH_SHORT).show();
                     String k="Action : collect"+ " username "+userName.getText().toString()+" password "+password.getText().toString()+" "+pressureTime.getText().toString()+" "+fingerLocation.getText().toString()+" "+downTime.getText().toString()+" "+upTime.getText().toString();
+
                     events.add(k);
                     k="";
                     int counter=1;
@@ -108,7 +126,12 @@ public class LoginActivity extends Activity {
                         k+=s;
                         counter++;
                     }
-                    Utills.writeToFile(LoginActivity.this,k);
+
+                    Gson gson = new GsonBuilder().create();
+                    JsonArray myKdaArray = gson.toJsonTree(kdaMotionEvents).getAsJsonArray();
+
+                    String myEventsString=myKdaArray.toString();
+                    Utills.writeToFile(LoginActivity.this,myEventsString);
                     k="";
                     events=new ArrayList<String>();
                     new SweetAlertDialog(LoginActivity.this, SweetAlertDialog.SUCCESS_TYPE)
@@ -205,27 +228,39 @@ public class LoginActivity extends Activity {
     }
 
     public void onEvent(KeyboardTouchEvent event) {
-        String action="";
-        switch (event.getMotionEvent().getAction()) {
-            case MotionEvent.ACTION_DOWN: {
-                action="Keyboard Button Down";
-                startClickTime = Calendar.getInstance().getTimeInMillis();
-                downTime.setText("Down Time:" + startClickTime);
+        if (event.getMotionEvent().getAction()== MotionEvent.ACTION_DOWN||event.getMotionEvent().getAction()== MotionEvent.ACTION_UP) {
+            String action = "";
+            KDAMotionEvent motionEvent = new KDAMotionEvent();
+            motionEvent.actionId = event.getMotionEvent().getAction();
+            switch (event.getMotionEvent().getAction()) {
+                case MotionEvent.ACTION_DOWN: {
+                    motionEvent.action = action = "Keyboard Button Down";
+                    motionEvent.actionTime = startClickTime = Calendar.getInstance().getTimeInMillis();
+                    downTime.setText("Down Time:" + startClickTime);
+                    break;
+                }
+                case MotionEvent.ACTION_UP: {
+                    motionEvent.action = action = "Keyboard Button Up";
+                    long clickTime = Calendar.getInstance().getTimeInMillis();
+                    motionEvent.actionTime = clickTime;
+                    long clickDuration = clickTime - startClickTime;
+                    upTime.setText("UpTime:" + clickTime + "\n Down Up Time:" + clickDuration);
+                }
                 break;
             }
-            case MotionEvent.ACTION_UP: {
-                action="Keyboard Button Up";
-                long clickTime = Calendar.getInstance().getTimeInMillis();
-                long clickDuration = clickTime - startClickTime;
-                upTime.setText("UpTime:" + clickTime + "\n Down Up Time:" + clickDuration);
-            }
-            break;
-        }
-        pressureTime.setText("pressure:" + event.getMotionEvent().getPressure() + "\nsize: " + event.getMotionEvent().getSize());
-        letterPressed.setText("letter pressed : " + event.charPressed != null ? event.charPressed + "" : "not considered yet");
-        fingerLocation.setText("Finger Location: X=" + event.getMotionEvent().getX() + " Y=" + event.getMotionEvent().getY());
-        if (event.getMotionEvent().getAction()== MotionEvent.ACTION_DOWN||event.getMotionEvent().getAction()== MotionEvent.ACTION_UP)
-        events.add("Action : "+action+ " username "+userName.getText().toString()+" password "+password.getText().toString()+" "+pressureTime.getText().toString()+" "+fingerLocation.getText().toString()+" "+downTime.getText().toString()+" "+upTime.getText().toString());
+            motionEvent.pressure = event.getMotionEvent().getPressure();
+            motionEvent.size = event.getMotionEvent().getSize();
+            pressureTime.setText("pressure:" + event.getMotionEvent().getPressure() + "\nsize: " + event.getMotionEvent().getSize());
+            motionEvent.keyboardCharClicked = event.charPressed != null ? event.charPressed + "" : "not considered yet";
+            letterPressed.setText("letter pressed : " + event.charPressed != null ? event.charPressed + "" : "not considered yet");
 
+            motionEvent.fingerXpostion=event.getMotionEvent().getX();
+            motionEvent.fingerYpostion= event.getMotionEvent().getY();
+            fingerLocation.setText("Finger Location: X=" + event.getMotionEvent().getX() + " Y=" + event.getMotionEvent().getY());
+            motionEvent.username=userName.getText().toString();
+            motionEvent.password=password.getText().toString();
+            events.add("Action : " + action + " username " + userName.getText().toString() + " password " + password.getText().toString() + " " + pressureTime.getText().toString() + " " + fingerLocation.getText().toString() + " " + downTime.getText().toString() + " " + upTime.getText().toString());
+            kdaMotionEvents.add(motionEvent);
+        }
     }
 }
