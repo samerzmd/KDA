@@ -57,6 +57,7 @@ public class LoginActivity extends Activity {
     int numOfExp=0;
     ArrayList<String>events=new ArrayList<String>();
     ArrayList<KDAMotionEvent>kdaMotionEvents=new ArrayList<KDAMotionEvent>();
+    ArrayList<ArrayList<KDAMotionEvent>>arrayListsKdaMotionEvents=new ArrayList<ArrayList<KDAMotionEvent>>();
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,7 +67,7 @@ public class LoginActivity extends Activity {
         setActionBar(toolbar);
         bus.register(this);
 
-        password.addValidator(new EightCharValidator());
+
         btnCollect.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, final MotionEvent event) {
@@ -126,22 +127,28 @@ public class LoginActivity extends Activity {
                         k+=s;
                         counter++;
                     }
+                    arrayListsKdaMotionEvents.add(kdaMotionEvents);
 
-                    Gson gson = new GsonBuilder().create();
-                    JsonArray myKdaArray = gson.toJsonTree(kdaMotionEvents).getAsJsonArray();
-
-                    String myEventsString=myKdaArray.toString();
-                    Utills.writeToFile(LoginActivity.this,myEventsString);
                     k="";
                     events=new ArrayList<String>();
                     new SweetAlertDialog(LoginActivity.this, SweetAlertDialog.SUCCESS_TYPE)
                             .setTitleText("Good Job!")
-                            .setContentText("Your Info has been Saved Successfully! "+ ++numOfExp +" out of 10").setConfirmClickListener(new SweetAlertDialog.OnSweetClickListener() {
+                            .setContentText("Your Info has been Saved Successfully! "+ ++numOfExp +" out of 3").setConfirmClickListener(new SweetAlertDialog.OnSweetClickListener() {
                         @Override
                         public void onClick(SweetAlertDialog sweetAlertDialog) {
                             userName.setText("");
                             password.setText("");
-                            if (numOfExp>=10){
+                            if (numOfExp>=3){
+                                Gson gson = new GsonBuilder().create();
+                                ArrayList one=new ArrayList();
+                                for (ArrayList k:arrayListsKdaMotionEvents) {
+                                    one.addAll(k);
+                                }
+                                JsonArray myKdaArray = gson.toJsonTree(one).getAsJsonArray();
+
+                                String myEventsString=myKdaArray.toString();
+                                Utills.writeToFile(LoginActivity.this,myEventsString);
+
                                 numOfExp=0;
                                 sweetAlertDialog.dismiss();
                             }

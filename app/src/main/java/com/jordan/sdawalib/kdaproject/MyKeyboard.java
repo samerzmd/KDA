@@ -98,11 +98,17 @@ public class MyKeyboard extends InputMethodService implements KeyboardView.OnKey
                 break;
             case -11:
                 keyboard = new Keyboard(this, R.xml.symbols);
+                caps=false;
+                keyboard.setShifted(caps);
+                kv.invalidateAllKeys();
                 kv.setKeyboard(keyboard);
                 break;
             case -12:
 
                 keyboard = new Keyboard(this, R.xml.qwerty);
+                caps=false;
+                keyboard.setShifted(caps);
+                kv.invalidateAllKeys();
                 kv.setKeyboard(keyboard);
                 break;
             default:
